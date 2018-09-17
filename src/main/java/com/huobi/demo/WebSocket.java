@@ -3,6 +3,8 @@ package com.huobi.demo;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_17;
 import org.java_websocket.handshake.ServerHandshake;
@@ -17,6 +19,9 @@ import java.util.Map;
 
 @Slf4j
 public class WebSocket extends WebSocketClient {
+
+  public Log log = LogFactory.getLog(this.getClass());
+
 
   private URI uri;
   private String accessKey;
@@ -70,21 +75,24 @@ public class WebSocket extends WebSocketClient {
       String message = new String(ZipUtil.decompress(bytes.array()), "UTF-8");
       JSONObject jsonObject = JSONObject.parseObject(message);
       String op = jsonObject.getString("op");
-      Integer errCode = jsonObject.getInteger("err-code");
+      Object errCode = jsonObject.get("err-code");
 
       if ("ping".equals(op)) {
         String pong = jsonObject.toString();
         send(pong.replace("ping", "pong"));
       } else if ("auth".equals(op)) {
-        //鉴权结果
 
-        if (errCode != 0) {
-          log.info(message);
-        } else {
-          //鉴权成功发送sub 请求
-          sendSub("accounts", "12123");
-
-        }
+          if(errCode instanceof Integer) {
+            //鉴权结果
+            if ((Integer) errCode != 0) {
+              log.info(message);
+            } else {
+              //鉴权成功发送sub 请求
+              sendSub("accounts", "12123");
+            }
+          }else {
+              System.out.println("errCode : " + (String)errCode);
+          }
 
       } else {
         log.info(message);
